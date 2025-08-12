@@ -1,5 +1,0 @@
-this model is to take the esm gene and llama gene (from go term) seperately. 
-then get the min(8k, esm gene) and min(8k, llama gene) seperately
-then generate the esm macrogene and llama macrogene seperately
-then merge all the macrogenes 
-
