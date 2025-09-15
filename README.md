@@ -1,24 +1,24 @@
-# **Galaxy: Deciphering Cellular Evolution with Universal Multimodal Embeddings**
+# **Unify: Learning Cellular Evolution with Universal Multimodal Embeddings**
 
-This repository contains the code for training and generating results using the Galaxy model.
+This repository contains the code for training and generating results using the Unify model.
 
 ## **Overview**
 ![Architecture Diagram](images/model.png)
 
-**Galaxy** is a **transfer learning framework** designed to integrate single-cell RNA sequencing (**scRNA-seq**) data **across species** — even those separated by hundreds of millions of years.  
+**Unify** is a **transfer learning framework** designed to integrate single-cell RNA sequencing (**scRNA-seq**) data **across species** — even those separated by hundreds of millions of years.  
 Instead of relying solely on one-to-one orthologs, Galaxy creates **functionally coherent multi-modal macrogenes** that **transcend species boundaries** by integrating:  
 
 - **Gene expression data** (RNA-seq)  
 - **Protein language model embeddings**  
 - **General-purpose large language model embeddings**  
 
-This approach allows Galaxy to:  
+This approach allows Unify to:  
 - ✅ Correct **technical batch effects** while preserving conserved biology  
 - ✅ Capture **functionally convergent gene programs** beyond strict orthology  
 - ✅ Predict **cross-species perturbation responses** (e.g., mouse → human)  
 - ✅ Build **multi-species evolutionary trees** of cell types with higher accuracy  
 
-By uniting molecular and computational insights, Galaxy opens a **new avenue for comparative single-cell genomics**, enabling biological discovery across vast evolutionary distances.  
+By uniting molecular and computational insights, Unify opens a **new avenue for comparative single-cell genomics**, enabling biological discovery across vast evolutionary distances.  
 
 ### **Setting up Galaxy**
 
@@ -39,7 +39,7 @@ pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_
 **Step 3:** Run the Galaxy model:  
 
 ```bash
-python Galaxy_end_to_end.py \
+python Unify.py \
   --output_path ./runs/exp1 \
   --h5ad_files ../data/task3_cat.h5ad ../data/task3_tiger.h5ad \
   --species_labels cat tiger \
@@ -50,12 +50,12 @@ python Galaxy_end_to_end.py \
   --train_epochs 500
 ```
 
-### **Galaxy output**
+### **Unify output**
 
 - **`macrogene_merged_with_galaxy.h5ad`** – AnnData file of the macrogene expressions.  
   - First 2k = ESM macrogenes  
   - Latter 2k = LLaMA macrogenes  
-  - Integrated embedding is stored in `adata.obsm['X_galaxy']`.  
+  - Integrated embedding is stored in `adata.obsm['X_unify']`.  
 
 - **`all-esm_to_macrogenes.pkl`** – weight of each gene from each species to the ESM macrogenes.  
 
