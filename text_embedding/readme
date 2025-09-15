@@ -3,7 +3,11 @@ https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Cgen
 
 similar to the mouse go term information
 
-there are three ways in getting the gene description information:
+Note: 
+(1) Here we used LLaMA-2 model as an example to generate the gene description embeddings. Any other LLM could be used in this process.
+(2) We used the gene ontology term as the gene description. Besides GO term, we could also use other gene functional description, such as KEGG pathway, Reactome pathway and so on.
+
+There are three ways in getting the gene description information:
 A. from the ncbi description
 for the other species, we used the mygene package to extract the gene's id (which will be used in the later information extraction from ncbi website) information from several databases, such as NCBI, uniport, ensembl...
 this package support all the species in NCBI, by accepting either the species name, taxonamic id 
@@ -34,7 +38,7 @@ https://www.uniprot.org/
 (2) we can run the generate_gene_description.py file to generate the gene to description mapping json file and the gene to its description embedding file. 
 
 C. generate the GO term description from the protein sequence file
-http://eggnog-mapper.embl.de/submit_job
+http://eggnog-mapper.embl.de/submit_job or download the tool run it locally
 (1) generate the protein sequences annotation GO term file
 (2) get the protein to go description file and their embedding file
 (3) adjust/match the protein id to the gene id in the generated embedding file
