@@ -172,10 +172,10 @@ def merge_species_and_attach_latent(outdir: Path, sorted_species_names: list[str
                          "Ensure the per-species ordering matches dataset construction.")
 
     # 5) Attach embedding
-    merged.obsm["X_galaxy"] = latent
+    merged.obsm["X_unify"] = latent
 
     # 6) Save
-    merged_fp = outdir / "macrogene_merged_with_galaxy.h5ad"
+    merged_fp = outdir / "macrogene_merged_with_unify.h5ad"
     merged.write_h5ad(merged_fp)
     print(f"[E2E] Wrote merged macrogene AnnData with integrated emnbeddings to {merged_fp}")
 
