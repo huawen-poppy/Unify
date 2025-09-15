@@ -1,0 +1,40 @@
+the human go term information is downloaded from the uniprot with reviewed label
+https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Cgene_names%2Cgo&format=tsv&query=%28organism_name%3Ahuman%29+AND+%28model_organism%3A9606%29+AND+%28reviewed%3Atrue%29
+
+similar to the mouse go term information
+
+there are three ways in getting the gene description information:
+A. from the ncbi description
+for the other species, we used the mygene package to extract the gene's id (which will be used in the later information extraction from ncbi website) information from several databases, such as NCBI, uniport, ensembl...
+this package support all the species in NCBI, by accepting either the species name, taxonamic id 
+for details about this package, please check:https://docs.mygene.info/en/latest/doc/data.html#data-sources
+
+so all the process for the gene description process is:
+(1) generate the gene: gene id dictionary (json file)
+(2) use previouse generated file to extract the gene functional description from the NCBI website one by one (can be long)
+(3) run the llama model to generate the corresponding description embedding files.
+
+Distanvages:
+(1) waitting (downloading) time can be long. Sometimes the network could be broken 
+(2) not good for the non-model species genes. the description may not exist for the these genes even though they exist in the model species
+
+B. from the gene_ontology.gaf file.
+(1) we first download the go term information (go id: ontology description) from the geneontology website:
+https://geneontology.org/docs/download-ontology/
+https://geneontology.org/docs/download-go-annotations/
+https://geneontology.org/docs/download-go-annotations/#2-all-other-organisms
+https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/
+
+sometimes the website broke, we can also access from the quickgo website (this could contain the annotation information not only from the uniport):
+https://www.ebi.ac.uk/QuickGO/annotations?taxonId=9544&taxonUsage=descendants
+
+or the other quick way to do it is from the uniport:
+https://www.uniprot.org/
+
+(2) we can run the generate_gene_description.py file to generate the gene to description mapping json file and the gene to its description embedding file. 
+
+C. generate the GO term description from the protein sequence file
+http://eggnog-mapper.embl.de/submit_job
+(1) generate the protein sequences annotation GO term file
+(2) get the protein to go description file and their embedding file
+(3) adjust/match the protein id to the gene id in the generated embedding file
