@@ -1,6 +1,6 @@
 # Gene Description Embeddings with GO Terms
 
-This repository demonstrates how to generate **gene description embeddings** using functional annotations such as **GO terms**.  
+This folder demonstrates how to generate **gene description embeddings** using functional annotations such as **GO terms**.  
 
 The human GO term information is downloaded from UniProt (reviewed entries only):  
 👉 [Download link](https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Cgene_names%2Cgo&format=tsv&query=%28organism_name%3Ahuman%29+AND+%28model_organism%3A9606%29+AND+%28reviewed%3Atrue%29)  
@@ -55,7 +55,7 @@ A similar procedure is applied for **mouse GO term information**.
 ---
 
 ## Summary
-This project provides multiple workflows for generating **gene functional descriptions and embeddings**:
+This README provides multiple workflows for generating **gene functional descriptions and embeddings**:
 - Using **NCBI descriptions** (via `mygene`)  
 - Using **GO annotation files**  
 - Using **protein sequence annotation tools**  
