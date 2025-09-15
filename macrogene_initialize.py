@@ -6,9 +6,7 @@ from sklearn.cluster import KMeans
 from scipy.stats import rankdata
 import pandas as pd
 
-## below code, i am going to add a module like saturn
-# first for the generated protein embeddings from the esm model, i will need to initialize the macrogenes using k-mean clustering
-# then i need to initialize the weight for each gene to each macrogenes
+
 def macrogene_initialization(prot_embeddings, species_gene_names, num_macrogene=2000, normalize=False,seed=0):
     print('macrogene initialization')
     if normalize:
@@ -54,16 +52,7 @@ def update_macrogene_weight(species_to_adata,sorted_species_names, species_gene_
     macrogene_weights = torch.stack(macrogene_weights)
 
     return macrogene_weights, all_species_gene_names
-'''
-def generate_macrogene_input(adata, species_gene_names, macrogene_weights, num_macrogene=2000):
-    print('generate macrogene input')
-    gene_expression = adata.X
-    gene_expression = torch.tensor(gene_expression.toarray())
-    macrogene_input = torch.zeros((gene_expression.shape[0], num_macrogene))
-    for i, gene in enumerate(species_gene_names):
-        macrogene_input[:,i] = gene_expression[:,i] * macrogene_weights[i]
-    return macrogene_input
-'''
+
 def load_gene_embeddings_adata(adata, species, embedding_path):
     '''
     load the gene embeddings from the given embedding path.

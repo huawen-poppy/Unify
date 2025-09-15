@@ -52,7 +52,7 @@ python Unify.py \
 
 ### **Unify output**
 
-- **`macrogene_merged_with_galaxy.h5ad`** – AnnData file of the macrogene expressions.  
+- **`macrogene_merged_with_unify.h5ad`** – AnnData file of the macrogene expressions.  
   - First 2k = ESM macrogenes  
   - Latter 2k = LLaMA macrogenes  
   - Integrated embedding is stored in `adata.obsm['X_unify']`.  
