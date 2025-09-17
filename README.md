@@ -6,7 +6,7 @@ This repository contains the code for training and generating results using the 
 ![Architecture Diagram](images/model.png)
 
 **Unify** is a **transfer learning framework** designed to integrate single-cell RNA sequencing (**scRNA-seq**) data **across species** — even those separated by hundreds of millions of years.  
-Instead of relying solely on one-to-one orthologs, Galaxy creates **functionally coherent multi-modal macrogenes** that **transcend species boundaries** by integrating:  
+Instead of relying solely on one-to-one orthologs, Unify creates **functionally coherent multi-modal macrogenes** that **transcend species boundaries** by integrating:  
 
 - **Gene expression data** (RNA-seq)  
 - **Protein language model embeddings**  
@@ -20,7 +20,7 @@ This approach allows Unify to:
 
 By uniting molecular and computational insights, Unify opens a **new avenue for comparative single-cell genomics**, enabling biological discovery across vast evolutionary distances.  
 
-### **Setting up Galaxy**
+### **Setting up Unify**
 
 **Step 1:** Install the environment based on the `requirements.txt` file:  
 
@@ -36,7 +36,7 @@ pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_
 
 ---
 
-**Step 3:** Run the Galaxy model:  
+**Step 3:** Run the Unify model:  
 
 ```bash
 python Unify.py \
