@@ -74,10 +74,7 @@ python Unify.py \
 
 If you find this tool useful in your research, please cite our preprint:
 
-**Unify: Learning Cellular Evolution with Universal Multimodal Embeddings**  
-Huawen Zhong, Wenkai Han, Guoxin Cui, David Gomez-Cabrero, Jesper Tegner, Xin Gao, Manuel Aranda  
-*bioRxiv* 2025.09.07.674681  
-doi: [https://doi.org/10.1101/2025.09.07.674681](https://doi.org/10.1101/2025.09.07.674681)
+**Unify: Learning Cellular Evolution with Universal Multimodal Embeddings**(https://doi.org/10.1101/2025.09.07.674681)
 
 ### BibTeX
 ```bibtex
