@@ -44,7 +44,7 @@ python Unify.py \
   --h5ad_files ../data/task3_cat.h5ad ../data/task3_tiger.h5ad \
   --species_labels cat tiger \
   --celltype_labels NewCelltype NewCelltype \
-  --gene_esm_embedding_path ../gene_embeddings/task3_cat.gene_symbol_to_embedding_ESM1b.pt ../gene_embeddings/task3_tiger.gene_symbol_to_embedding_ESM1b.pt \
+  --gene_esm_embedding_path ../gene_embeddings/task3_cat.gene_symbol_to_embedding_ESM2.pt ../gene_embeddings/task3_tiger.gene_symbol_to_embedding_ESM2.pt \
   --gene_llama_embedding_path ../gene_go_term/all_go_gene_embedding/task3_cat_llama2-7B_gene_embedding.pt ../gene_go_term/all_go_gene_embedding/task3_tiger_llama2-7B_gene_embedding.pt \
   --eval_every 5 \
   --train_epochs 500
