@@ -70,5 +70,21 @@ python Unify.py \
 - **`best.pt`** – best model checkpoint during training. 
 
 
-### **Citing**
-If you find our manuscript and code useful, please consider citing the preprint:
+## 📖 Citation
+
+If you find this tool useful in your research, please cite our preprint:
+
+**Unify: Learning Cellular Evolution with Universal Multimodal Embeddings**  
+Huawen Zhong, Wenkai Han, Guoxin Cui, David Gomez-Cabrero, Jesper Tegner, Xin Gao, Manuel Aranda  
+*bioRxiv* 2025.09.07.674681  
+doi: [https://doi.org/10.1101/2025.09.07.674681](https://doi.org/10.1101/2025.09.07.674681)
+
+### BibTeX
+```bibtex
+@article{zhong2025unify,
+  title={Unify: Learning Cellular Evolution with Universal Multimodal Embeddings},
+  author={Zhong, Huawen and Han, Wenkai and Cui, Guoxin and Gomez-Cabrero, David and Tegner, Jesper and Gao, Xin and Aranda, Manuel},
+  journal={bioRxiv},
+  year={2025},
+  doi={10.1101/2025.09.07.674681}
+}
