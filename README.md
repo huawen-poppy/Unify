@@ -20,6 +20,7 @@ This approach allows Unify to:
 
 By uniting molecular and computational insights, Unify opens a **new avenue for comparative single-cell genomics**, enabling biological discovery across vast evolutionary distances.  
 
+
 ### **Setting up Unify**
 
 **Step 1:** Install the environment based on the `requirements.txt` file:  
@@ -28,6 +29,7 @@ By uniting molecular and computational insights, Unify opens a **new avenue for 
 pip install -r requirements.txt
 pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 ```
+---
 
 **Step 2:** Generate the protein embeddings file and the gene functional description embeddings file.  
 
@@ -103,13 +105,13 @@ python Unify.py \
   --celltype_labels NewCelltype NewCelltype \
   --gene_esm_embedding_path ./toy_data/task3_cat.gene_symbol_to_embedding_ESM2.pt ./toy_data/task3_tiger.gene_symbol_to_embedding_ESM2.pt \
   --gene_llama_embedding_path ./toy_data/task3_cat_llama2-7B_gene_embedding.pt ./toy_data/task3_tiger_llama2-7B_gene_embedding.pt \
-  --eval_every 5 \
   --train_epochs 10 \
   --num_esm_macrogene 100 \
   --num_llama_macrogene 100 \
   --highly_variable_genes 2000 
 
 ```
+---
 
 #### **Unify output**
 
