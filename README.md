@@ -45,7 +45,7 @@ Below is a description of the main arguments used in `Unify.py`.
 ##### Basic input arguments
 
 ###### `--h5ad_files`
-One or more input AnnData (`.h5ad`) files. Each file should correspond to one species dataset.
+Two or more input AnnData (`.h5ad`) files. Each file should correspond to one species dataset.
 
 ###### `--species_labels`
 Species names corresponding to the input `h5ad_files`, in the same order.
