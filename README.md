@@ -1,14 +1,7 @@
 # Unify: Learning Cellular Evolution with Universal Multimodal Embeddings
 
-This repository contains the code for training and running **Unify**, a multimodal framework for:
+This repository contains the code for training and running **Unify**
 
-- **cross-species single-cell data integration**, and
-- **cross-species perturbation prediction**.
-
-The current codebase uses a **single unified command-line script** with a required `--mode` argument:
-
-- `--mode integration`
-- `--mode perturbation`
 
 ## Overview
 
@@ -78,16 +71,15 @@ Use the code in the `text_embedding` folder to generate gene functional text des
 The unified pipeline is run with a required `--mode` argument:
 
 ```bash
-python unify_multitask_pipeline.py --mode integration ...
+python Unify.py --mode integration ...
 ```
 
 or
 
 ```bash
-python unify_multitask_pipeline.py --mode perturbation ...
+python Unify.py --mode perturbation ...
 ```
 
-If your script file has a different name, replace `unify_multitask_pipeline.py` with your actual filename.
 
 ---
 
@@ -136,54 +128,11 @@ Number of ESM-based macrogenes. Default: `2000`.
 ##### `--num_llama_macrogene`
 Number of LLaMA-based macrogenes. Default: `2000`.
 
-##### `--seed`
-Random seed. Default: `0`.
-
-##### `--eval_every`
-Evaluate integration ARI every `N` epochs. If omitted, the integration default is used.
-
-##### Training and architecture arguments
-If these are omitted, integration mode uses its own defaults.
-
-- `--batch_size`
-- `--train_epochs`
-- `--grad_normalized_type`
-- `--latent_size`
-- `--macrogene_encoder_hidden_size`
-- `--macrogene_encoder_dropout_ratio`
-- `--macrogene_decoder_hidden_size`
-- `--macrogene_decoder_dropout_ratio`
-- `--hidden_size_adversary_species`
-- `--hidden_size_adversary_celltype`
-- `--lr_encoder`
-- `--lr_generator`
-- `--lr_discriminator_species`
-- `--lr_discriminator_celltype`
-
-### Integration defaults
-
-If not manually specified, integration mode uses:
-
-- `batch_size = 256`
-- `train_epochs = 500`
-- `eval_every = 5`
-- `grad_normalized_type = l2`
-- `latent_size = 256`
-- `macrogene_encoder_hidden_size = 256`
-- `macrogene_encoder_dropout_ratio = 0.2`
-- `macrogene_decoder_hidden_size = 256`
-- `macrogene_decoder_dropout_ratio = 0.3`
-- `hidden_size_adversary_species = 256`
-- `hidden_size_adversary_celltype = 256`
-- `lr_encoder = 0.0008269200693451001`
-- `lr_generator = 0.00010667566651855372`
-- `lr_discriminator_species = 0.00015139547698955852`
-- `lr_discriminator_celltype = 0.00018364960390400008`
 
 ### Example command
 
 ```bash
-python unify_multitask_pipeline.py \
+python Unify.py \
   --mode integration \
   --output_path ./test_result \
   --h5ad_files ./toy_data/task3_cat.h5ad ./toy_data/task3_tiger.h5ad \
@@ -205,10 +154,10 @@ Running `--mode integration` produces:
   Merged macrogene AnnData with integrated embeddings stored in `adata.obsm['X_unify']`.
 
 - **`all-esm_to_macrogenes.pkl`**  
-  Mapping from each species-specific gene to its ESM macrogene weight vector.
+  Mapping from each species' gene to its ESM macrogene weight vector.
 
 - **`all-llama_to_macrogenes.pkl`**  
-  Mapping from each species-specific gene to its LLaMA macrogene weight vector.
+  Mapping from each species' gene to its LLaMA macrogene weight vector.
 
 - **`*_processed_esm.h5ad`**  
   Per-species processed AnnData filtered to genes with ESM embeddings.
@@ -217,10 +166,10 @@ Running `--mode integration` produces:
   Per-species processed AnnData filtered to genes with text embeddings.
 
 - **`best.pt`**  
-  Best integration checkpoint saved during training.
+  Final model saved during training.
 
 - **`best_meta.json`**  
-  Metadata for the best checkpoint.
+  Metadata for the final model.
 
 - **`inference_summary.json`**  
   Summary of the final embedding generation step.
@@ -233,7 +182,7 @@ Use this mode to train an end-to-end perturbation model and predict the perturba
 
 ### Perturbation setup
 
-The perturbation workflow assumes your inputs contain:
+The perturbation workflow assumes the inputs contain:
 
 - **source species control cells**
 - **source species perturbation cells**
@@ -244,8 +193,6 @@ The model then predicts:
 - **target species perturbation cells**
 
 ### Required arguments
-
-#### Shared inputs
 
 ##### `--mode`
 Set to `perturbation`.
@@ -264,8 +211,6 @@ Paths to the gene functional text embedding files for each species.
 
 ##### `--output_path`
 Directory where output files will be saved.
-
-#### Perturbation-specific
 
 ##### `--source_species`
 Species used as the perturbation reference.
@@ -299,51 +244,17 @@ Number of LLaMA-based macrogenes. Default: `2000`.
 ##### `--seed`
 Random seed. Default: `0`.
 
-##### Training and architecture arguments
-If these are omitted, perturbation mode uses its own defaults.
-
-- `--batch_size`
-- `--train_epochs`
-- `--latent_size`
-- `--macrogene_encoder_hidden_size`
-- `--macrogene_encoder_dropout_ratio`
-- `--macrogene_decoder_hidden_size`
-- `--macrogene_decoder_dropout_ratio`
-- `--hidden_size_adversary_species`
-- `--hidden_size_adversary_celltype`
-- `--lr_encoder`
-- `--lr_generator`
-- `--lr_discriminator_species`
-- `--lr_discriminator_celltype`
-
-### Perturbation defaults
-
-If not manually specified, perturbation mode uses:
-
-- `batch_size = 128`
-- `train_epochs = 1000`
-- `latent_size = 256`
-- `macrogene_encoder_hidden_size = 256`
-- `macrogene_encoder_dropout_ratio = 0.2`
-- `macrogene_decoder_hidden_size = 256`
-- `macrogene_decoder_dropout_ratio = 0.3`
-- `hidden_size_adversary_species = 256`
-- `hidden_size_adversary_celltype = 256`
-- `lr_encoder = 0.001`
-- `lr_generator = 0.001`
-- `lr_discriminator_species = 0.001`
-- `lr_discriminator_celltype = 0.001`
 
 ### Example command
 
 ```bash
-python unify_multitask_pipeline.py \
+python Unify.py \
   --mode perturbation \
   --output_path ./perturbation_result \
   --h5ad_files ./toy_data/mouse.h5ad ./toy_data/human.h5ad \
   --species_labels mouse human \
-  --gene_esm_embedding_path ./toy_data/mouse_esm.pt ./toy_data/human_esm.pt \
-  --gene_llama_embedding_path ./toy_data/mouse_llama.pt ./toy_data/human_llama.pt \
+  --gene_esm_embedding_path ./toy_data/mouse.gene_symbol_to_embedding_ESM2.pt ./toy_data/human.gene_symbol_to_embedding_ESM2.pt \
+  --gene_llama_embedding_path ./toy_data/mouse_llama2-7B_gene_embeddings.pt ./toy_data/human_llama2-7B_gene_embeddings.pt \
   --source_species mouse \
   --target_species human \
   --condition_key cytokine \
@@ -359,10 +270,10 @@ Running `--mode perturbation` produces:
   Final one-file perturbation model containing the bundled encoder-decoder weights and metadata.
 
 - **`<target_species>_predicted_<perturb_label>_basal.h5ad`**  
-  Basal-based perturbation prediction for the target species.
+  Basal-based perturbation prediction for the target species. The preturbation prediction is storted in adata.X
 
 - **`<target_species>_predicted_<perturb_label>_macrogene.h5ad`**  
-  Macrogene-based perturbation prediction for the target species.
+  Macrogene-based perturbation prediction for the target species. The preturbation prediction is storted in adata.X
 
 - **`all-gene_to_esm_macrogenes_weights.pkl`**  
   Gene-to-ESM-macrogene weight mapping used in perturbation preprocessing.
@@ -376,16 +287,6 @@ Running `--mode perturbation` produces:
 - **`*_processed_llama.h5ad`**  
   Per-species processed AnnData filtered to genes with text embeddings.
 
-### Perturbation output metadata
-
-The predicted perturbation AnnData files include metadata such as:
-
-- target perturbation label
-- `prediction_mode` (`basal` or `macrogene`)
-- `source_species`
-- `target_species`
-- `source_control_label`
-- `source_perturb_label`
 
 ---
 
@@ -406,6 +307,7 @@ The predicted perturbation AnnData files include metadata such as:
 - The labels specified by `--control_label` and `--perturb_label` must be present in the corresponding `adata.obs[condition_key]` fields.
 
 - The perturbation workflow does not require ground-truth target perturbation data for prediction output generation.
+
 
 ## Citation
 
