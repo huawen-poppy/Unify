@@ -213,7 +213,7 @@ def main():
     parser.add_argument('--macrogene_encoder_dropout_ratio', type=float, default=0.2)
     parser.add_argument('--macrogene_encoder_hidden_size', type=int, default=256)
     parser.add_argument('--train_epochs', type=int, default=500)
-    parser.add_argument('--eval_every', type=int, default=5, help='Compute ARI every N epochs (for best selection)')
+    parser.add_argument('--eval_every', type=int, default=5, help='Evaluate ARI every N epochs')
     args = parser.parse_args()
 
     # Seeds & paths
