@@ -6,6 +6,7 @@ import pandas as pd
 import torch.nn as nn
 import anndata as ann
 from collections import defaultdict
+from torch.utils.data import Dataset,DataLoader,Sampler, WeightedRandomSampler
 
 ### below class is used to load the single cell data from the h5ad files
 ### specifically for the macrogene aae model        
@@ -281,7 +282,343 @@ class SingleCellDataset_esm_llama(Dataset):
             raise IndexError
         else:
             raise NotImplementedError
+
+
+
+
+class SingleCellDataset_for_raw_reconstruction(Dataset):
+    """
+    This is the dataset object for taking raw count data as input.
+    It processes both ESM and Llama gene expression datasets,
+    creates a universal gene set, calculates macrogenes, and handles metadata.
+    """
+
+    def __init__(self, species_to_adata_esm: dict, species_to_adata_llama: dict,
+                 esm_centroid_weights: dict, llama_centroid_weights: dict,
+                 species_celltype_labels: dict, species_batch_labels: dict = None):
+        """
+        Initializes the dataset.
+
+        Args:
+            species_to_adata_esm (dict): Dictionary mapping species name to AnnData object for ESM raw counts.
+            species_to_adata_llama (dict): Dictionary mapping species name to AnnData object for Llama raw counts.
+            esm_centroid_weights (dict): Dictionary mapping species name to ESM centroid weights (Tensor).
+                                          Expected shape: (num_genes_esm, num_centroids_esm).
+            llama_centroid_weights (dict): Dictionary mapping species name to Llama centroid weights (Tensor).
+                                           Expected shape: (num_genes_llama, num_centroids_llama).
+            species_celltype_labels (dict): Dictionary mapping species name to the column name for cell type labels.
+            species_batch_labels (dict, optional): Dictionary mapping species name to the column name for batch labels. Defaults to None.
+        """
+
+        super(SingleCellDataset_for_raw_reconstruction, self).__init__()
+
+        self.raw_counts_esm = {}
+        self.raw_counts_llama = {}
+        self.raw_counts_universe_per_species = {}  # Stores the union of ESM and Llama genes for each species, with species prefix
+
+        # Macrogenes calculated per model and stored separately for flexible retrieval
+        self.macrogenes_esm = {}
+        self.macrogenes_llama = {}
+        self.macrogenes_combined_per_species = {} # Stores concatenated macrogenes for each species
+
+        self.species_category = list(species_to_adata_esm.keys())
+        if set(self.species_category) != set(species_to_adata_llama.keys()):
+            raise ValueError("Species keys in species_to_adata_esm and species_to_adata_llama must match.")
+
+        self.num_cells = {}
+        self.num_genes_universe_per_species = {}  # Number of genes in the universe set for each species
+
+        # Temporary dictionaries to hold metadata per species before global stacking
+        temp_celltype_labels = {}
+        temp_batch_labels = {}
+        temp_species_labels = {}
+        temp_celltype_category = {} # This is not directly stacked, but derived from the temporary celltype_labels
+
+        # New: Store global indices per species for custom sampling
+        # (This is still useful for internal mapping even if __getitem__ doesn't use it directly for lookup)
+        self.species_indices = defaultdict(list)
+        global_idx_counter = 0
+
+        # For global universal gene names
+        all_species_prefixed_genes = set()
+        self.gene_names_universe = {} # Stores the species-prefixed gene names for each species' universe
+
+        self.global_species_ids_for_weights = []
+        # --- Load and Process Data for ESM and Llama for each species ---
+        for species_label in self.species_category:
+            # Load ESM data
+            adata_esm = species_to_adata_esm[species_label]
+            # Convert sparse to dense if necessary
+            X_esm = torch.Tensor(adata_esm.X.toarray() if hasattr(adata_esm.X, 'toarray') else adata_esm.X).to(torch.float64)
+            self.raw_counts_esm[species_label] = X_esm
+            num_cells_esm, num_genes_esm = X_esm.shape
+
+            # Load Llama data
+            adata_llama = species_to_adata_llama[species_label]
+            # Convert sparse to dense if necessary
+            X_llama = torch.Tensor(adata_llama.X.toarray() if hasattr(adata_llama.X, 'toarray') else adata_llama.X).to(torch.float64)
+            self.raw_counts_llama[species_label] = X_llama
+            num_cells_llama, num_genes_llama = X_llama.shape
+
+            # Ensure consistent number of cells between ESM and Llama for the same species
+            if num_cells_esm != num_cells_llama:
+                raise ValueError(
+                    f"Mismatch in number of cells for species {species_label} "
+                    f"between ESM ({num_cells_esm}) and Llama ({num_cells_llama})."
+                )
+
+            self.num_cells[species_label] = num_cells_esm
+
+            # Populate species_indices for sampling
+            self.species_indices[species_label] = list(range(global_idx_counter, global_idx_counter + num_cells_esm))
+
+            species_id_val = self.species_id_dict[species_label] if hasattr(self, 'species_id_dict') else 0 # Will be updated later
+            self.global_species_ids_for_weights.extend([species_label] * num_cells_esm) # Store actual species label for now
+
+            global_idx_counter += num_cells_esm
+
+            # --- Handle Metadata (assuming consistent across ESM and Llama for same species) ---
+            temp_celltype_labels[species_label] = adata_esm.obs[species_celltype_labels[species_label]].values
+            temp_species_labels[species_label] = np.array([species_label] * num_cells_esm, dtype=object) # Store as object to avoid numpy type issues
+
+            if species_batch_labels is not None and species_label in species_batch_labels:
+                # Ensure batch labels are always treated as objects/strings if they contain None
+                temp_batch_labels[species_label] = adata_esm.obs[species_batch_labels[species_label]].astype(object).values
+            else:
+                temp_batch_labels[species_label] = np.array([None] * num_cells_esm, dtype=object) # Initialize with None if no batch labels
+            temp_celltype_category[species_label] = list(np.unique(temp_celltype_labels[species_label]))
+
+            # --- Create Universal Raw Counts for this species with species prefix ---
+            genes_esm = set(adata_esm.var_names.tolist())
+            genes_llama = set(adata_llama.var_names.tolist())
+            
+            # Add species prefix to gene names
+            species_prefixed_genes_esm = {f"{species_label}_{gene}" for gene in genes_esm}
+            species_prefixed_genes_llama = {f"{species_label}_{gene}" for gene in genes_llama}
+            universe_genes_for_species = sorted(list(species_prefixed_genes_esm.union(species_prefixed_genes_llama)))
+            self.num_genes_universe_per_species[species_label] = len(universe_genes_for_species)
+            self.gene_names_universe[species_label] = universe_genes_for_species # Store for this species
+
+            # Add to the global set of all unique genes
+            all_species_prefixed_genes.update(universe_genes_for_species)
+
+            # Create mappings for gene indices
+            esm_gene_to_idx = {gene: i for i, gene in enumerate(adata_esm.var_names)}
+            llama_gene_to_idx = {gene: i for i, gene in enumerate(adata_llama.var_names)}
+            universe_gene_to_idx_for_species = {gene: i for i, gene in enumerate(universe_genes_for_species)}
+
+            # Initialize universal raw count matrix for this species
+            universe_raw_counts_matrix = torch.zeros((num_cells_esm, len(universe_genes_for_species)), dtype=X_esm.dtype)
+
+            # Populate with ESM data
+            for gene in genes_esm:
+                species_prefixed_gene = f"{species_label}_{gene}"
+                universe_idx = universe_gene_to_idx_for_species[species_prefixed_gene]
+                esm_idx = esm_gene_to_idx[gene]
+                universe_raw_counts_matrix[:, universe_idx] += X_esm[:, esm_idx]
+
+            # Get non-overlapping genes only (i.e., those not in ESM)
+            non_overlapping_genes_llama = genes_llama - genes_esm
+
+            # Populate only non-overlapping genes from Llama
+            for gene in non_overlapping_genes_llama:
+                species_prefixed_gene = f"{species_label}_{gene}"
+                universe_idx = universe_gene_to_idx_for_species[species_prefixed_gene]
+                llama_idx = llama_gene_to_idx[gene]
+                universe_raw_counts_matrix[:, universe_idx] = X_llama[:, llama_idx]
+
+
+            self.raw_counts_universe_per_species[species_label] = universe_raw_counts_matrix
+
+            # --- Calculate Macrogenes ---
+            esm_weights = torch.stack(esm_centroid_weights[species_label])
+            llama_weights = torch.stack(llama_centroid_weights[species_label])
+            
+            # Verify weight dimensions
+            if esm_weights.shape[0] != num_genes_esm:
+                raise ValueError(
+                    f"ESM centroid weights for {species_label} ({esm_weights.shape}) "
+                    f"do not match gene dimension of raw counts ({num_genes_esm}). "
+                    f"Expected shape: (num_genes_esm, num_centroids_esm)."
+                )
+            if llama_weights.shape[0] != num_genes_llama:
+                raise ValueError(
+                    f"Llama centroid weights for {species_label} ({llama_weights.shape}) "
+                    f"do not match gene dimension of raw counts ({num_genes_llama}). "
+                    f"Expected shape: (num_genes_llama, num_centroids_llama)."
+                )
+
+            # Perform matrix multiplication
+            esm_macrogenes = X_esm @ esm_weights
+            llama_macrogenes = X_llama @ llama_weights
+
+            self.macrogenes_esm[species_label] = esm_macrogenes
+            self.macrogenes_llama[species_label] = llama_macrogenes
+
+            # Combine ESM and Llama macrogenes for this species
+            self.macrogenes_combined_per_species[species_label] = torch.cat((esm_macrogenes, llama_macrogenes), dim=1)
+
+        # --- Global Metadata Processing ---
+        # Collect all unique cell types across all species
+        # Note: Using temp_celltype_category for this initial aggregation
+        self.all_unique_celltype = set(val for key in temp_celltype_category.keys() for val in temp_celltype_category[key])
+        self.cell_type_num = len(self.all_unique_celltype)
+        self.cell_type_id_dict = dict(zip(sorted(list(self.all_unique_celltype)), range(len(self.all_unique_celltype))))
+
+        # Create one-hot and ID embeddings for cell types and species, and stack globally
+        # These will be the actual attributes used by __getitem__
+        self.global_celltype_onehot_embedding = []
+        self.global_celltype_id_embedding = []
+        self.global_species_onehot_embedding = []
+        self.global_species_id_embedding = []
+        self.global_batch_labels = [] # List of objects (strings or None)
+
+        species_labels_unique = sorted(self.species_category)
+        self.species_id_dict = dict(zip(species_labels_unique, range(len(species_labels_unique))))
+        onehot_species_id_matrix = np.eye(len(species_labels_unique), dtype=np.float32)
         
+        onehot_celltype_id_matrix = np.eye(self.cell_type_num, dtype=np.float32)
+
+        for species_label in self.species_category:
+            # Species embeddings
+            species_onehot_for_species = onehot_species_id_matrix[self.species_id_dict[species_label]]
+            self.global_species_onehot_embedding.extend([species_onehot_for_species] * self.num_cells[species_label])
+            self.global_species_id_embedding.extend([self.species_id_dict[species_label]] * self.num_cells[species_label])
+
+            # Cell type embeddings
+            celltype_labels_for_species = temp_celltype_labels[species_label]
+            for celltype in celltype_labels_for_species:
+                self.global_celltype_onehot_embedding.append(onehot_celltype_id_matrix[self.cell_type_id_dict[celltype]])
+                self.global_celltype_id_embedding.append(self.cell_type_id_dict[celltype])
+            
+            # Batch labels
+            self.global_batch_labels.extend(temp_batch_labels[species_label].tolist()) # Convert numpy array to list for consistent type with None
+
+        # Convert lists of arrays to stacked numpy arrays for efficient indexing
+        self.global_celltype_onehot_embedding = np.array(self.global_celltype_onehot_embedding, dtype=np.float32)
+        self.global_celltype_id_embedding = np.array(self.global_celltype_id_embedding, dtype=np.int64)
+        self.global_species_onehot_embedding = np.array(self.global_species_onehot_embedding, dtype=np.float32)
+        self.global_species_id_embedding = np.array(self.global_species_id_embedding, dtype=np.int64)
+        # self.global_batch_labels remains a list of objects
+
+
+        # --- Final Stacking of Macrogenes and Universal Raw Counts ---
+        self.macrogenes_combined = torch.vstack(list(self.macrogenes_combined_per_species.values()))
+
+        self.all_universe_genes_sorted = sorted(list(all_species_prefixed_genes)) # The global ordered list of all genes
+        global_gene_to_idx = {gene: i for i, gene in enumerate(self.all_universe_genes_sorted)}
+
+        total_cells_all_species = sum(self.num_cells.values())
+        total_unique_genes = len(self.all_universe_genes_sorted)
+
+        self.universal_raw_counts_stacked = torch.zeros((total_cells_all_species, total_unique_genes), dtype=torch.float64)
+
+        current_cell_row_offset = 0
+        for species_label in self.species_category:
+            species_raw_counts_matrix = self.raw_counts_universe_per_species[species_label]
+            species_prefixed_gene_names = self.gene_names_universe[species_label]
+            num_cells_in_species = self.num_cells[species_label]
+
+            for local_gene_idx, species_prefixed_gene in enumerate(species_prefixed_gene_names):
+                global_gene_idx = global_gene_to_idx[species_prefixed_gene]
+                self.universal_raw_counts_stacked[current_cell_row_offset : current_cell_row_offset + num_cells_in_species, global_gene_idx] = \
+                    species_raw_counts_matrix[:, local_gene_idx]
+            current_cell_row_offset += num_cells_in_species
+
+        # *** NEW: Calculate and store sample weights ***
+        self._calculate_sample_weights()
+
+    def _calculate_sample_weights(self):
+        """Calculates weights for each sample to balance species sampling."""
+        
+        # Get counts for each species
+        species_counts = defaultdict(int)
+        for species_label in self.global_species_ids_for_weights:
+            species_counts[species_label] += 1
+        
+        # Find the maximum count among species
+        max_count = max(species_counts.values())
+
+        # Calculate inverse frequency weights
+        # Assign a higher weight to samples from less frequent species
+        species_weights = {species: max_count / count for species, count in species_counts.items()}
+        
+        # Create a list of weights for each individual sample
+        self.sample_weights = torch.tensor([species_weights[self.global_species_ids_for_weights[i]] 
+                                            for i in range(len(self))])
+
+    def get_stacked_macrogenes(self):
+        """
+        Returns a tensor of macrogenes across all species,
+        where each cell has ESM and Llama macrogenes concatenated.
+
+        Returns:
+            torch.Tensor: Shape [total_cells, esm_dim + llama_dim]
+        """
+        return self.macrogenes_combined
+    
+    def get_stacked_universal_raw_counts(self):
+        """
+        Returns a stacked raw count matrix across all species.
+        For genes not present in a species, fills with zeros.
+
+        Returns:
+            torch.Tensor: Shape [total_cells, total_genes_union]
+            List[str]: Ordered list of all unique genes (columns of the matrix)
+        """
+        return self.universal_raw_counts_stacked, self.all_universe_genes_sorted
+    
+        
+    def __len__(self):
+        """Returns the total number of cells across all species."""
+        return sum(self.num_cells.values())
+
+    def get_dim(self):
+        """Returns a dictionary of the number of genes in the universal set for each species.
+        Note: This now refers to the 'universal' gene set *for each species*, not the global universal set."""
+        return self.num_genes_universe_per_species
+
+    def __getitem__(self, idx: int):
+        """
+        Retrieves a single cell's data based on a global index.
+
+        Args:
+            idx (int): The global index of the cell.
+
+        Returns:
+            tuple: A tuple containing:
+                - universal_raw_counts (torch.Tensor): Raw counts for the cell aligned to the global universal gene set.
+                                                        Shape: (total_unique_genes,).
+                - macrogenes_combined (torch.Tensor): Combined (ESM and Llama) macrogenes for the cell.
+                                                    Shape: (num_centroids_esm + num_centroids_llama,).
+                - species_onehot_embedding (np.ndarray): One-hot encoding of the species.
+                - species_id_embedding (np.ndarray): Integer ID of the species.
+                - celltype_onehot_embedding (np.ndarray): One-hot encoding of the cell type.
+                - celltype_id_embedding (np.ndarray): Integer ID of the cell type.
+                - batch_ret (Any): Batch label of the cell, or None if not provided.
+        """
+        if not isinstance(idx, int):
+            raise NotImplementedError("Only integer indexing is supported.")
+
+        # Directly retrieve the relevant data using the global index 'idx'
+        #import pdb;pdb.set_trace()
+        universal_raw_counts_for_cell = self.universal_raw_counts_stacked[idx]
+        macrogenes_combined_for_cell = self.macrogenes_combined[idx]
+
+        species_onehot = self.global_species_onehot_embedding[idx]
+        species_id = self.global_species_id_embedding[idx]
+        celltype_onehot = self.global_celltype_onehot_embedding[idx]
+        celltype_id = self.global_celltype_id_embedding[idx]
+        batch_ret = self.global_batch_labels[idx]
+
+        return (universal_raw_counts_for_cell,
+                macrogenes_combined_for_cell,
+                species_onehot,
+                species_id,
+                celltype_onehot,
+                celltype_id,
+                batch_ret)
+
 if __name__ == "__main__":
     species_h5ad_files={'cat':'../data/task3_cat.h5ad','tiger':'../data/task3_tiger.h5ad'}
     species_celltype_labels={'cat':'NewCelltype','tiger':'NewCelltype'}

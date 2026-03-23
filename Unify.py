@@ -177,6 +177,7 @@ def merge_species_and_attach_latent(outdir: Path, sorted_species_names: list[str
     # 6) Save
     merged_fp = outdir / "macrogene_merged_with_unify.h5ad"
     merged.write_h5ad(merged_fp)
+    (outdir / "latent.npy").unlink()
     print(f"[E2E] Wrote merged macrogene AnnData with integrated emnbeddings to {merged_fp}")
 
 # -----------------------------
@@ -356,10 +357,10 @@ def main():
     llama_centroid_weights = torch.stack(llama_centroid_weights) # [genes, llama_macros]
 
     # Save processed adatas
-    for k, v in species_to_adata_esm.items():
-        v.write_h5ad(outdir / f'{k}_processed_esm.h5ad')
-    for k, v in species_to_adata_llama.items():
-        v.write_h5ad(outdir / f'{k}_processed_llama.h5ad')
+    #for k, v in species_to_adata_esm.items():
+    #    v.write_h5ad(outdir / f'{k}_processed_esm.h5ad')
+    #for k, v in species_to_adata_llama.items():
+    #    v.write_h5ad(outdir / f'{k}_processed_llama.h5ad')
 
     # -----------------------------
     # STEP 6: build macrogene adata (uses per-species counts)
@@ -639,14 +640,7 @@ def main():
         Adversary_celltype_loss = adversary_celltype_loss_sum / n_batches
         Adversary_species_loss = adversary_species_loss_sum / n_batches
         Target_loss = Autoencoder_generator_loss + Encoder_loss
-        overall_celltype_precision = overall_celltype_precision_sum / n_batches
-        overall_species_precision = overall_species_precision_sum / n_batches
-        overall_celltype_recall = overall_celltype_recall_sum / n_batches
-        overall_species_recall = overall_species_recall_sum / n_batches
-        overall_celltype_f1 = overall_celltype_f1_sum / n_batches
-        overall_species_f1 = overall_species_f1_sum / n_batches
-        overall_celltype_acc = overall_celltype_acc_sum / n_batches
-        overall_species_acc = overall_species_acc_sum / n_batches
+
 
         # Evaluate ARI on embeddings at cadence
         if (epoch + 1) % eval_every == 0:
@@ -700,6 +694,9 @@ def main():
 
     generate_outputs_from_models(encoder, decoder, dataset, outdir, best_epoch_used)
     merge_species_and_attach_latent(outdir, sorted_species_names)
+    for sp in sorted_species_names:
+        fp = outdir / f"{sp}_macrogene_adata.h5ad"
+        fp.unlink()
 
 if __name__ == "__main__":
     main()
