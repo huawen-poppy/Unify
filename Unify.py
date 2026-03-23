@@ -18,6 +18,7 @@ import scanpy as sc
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics.cluster import adjusted_rand_score
 from torch import nn as torch_nn
 from torch.utils.data import DataLoader
@@ -1033,6 +1034,8 @@ def train_model_perturbation(args, dataset, output_path):
 
 
 
+
+
     history = []
     for epoch in range(args.train_epochs):
         model.train()
@@ -1107,6 +1110,7 @@ def train_model_perturbation(args, dataset, output_path):
         }
         history.append(epoch_record)
 
+    #pd.DataFrame(history).to_csv(Path(output_path) / "training_history.csv", index=False)
     final_model_path = save_final_inference_model(output_path, args, dataset, model.eval())
     return model.eval(), final_model_path
 
@@ -1205,8 +1209,16 @@ def predict_target_perturbation_basal(dataset, model, args):
     if source_control.n_obs == 0 or source_perturb.n_obs == 0 or target_control.n_obs == 0:
         raise ValueError("Could not find the required source/target control/perturb cells in the basal embeddings.")
 
-    delta = np.mean(source_perturb.X, axis=0) - np.mean(source_control.X, axis=0)
-    pred_target_basal = target_control.X + delta
+    source_control_mean = np.mean(to_numpy(source_control.X), axis=0).reshape(1, -1)
+    target_control_mean = np.mean(to_numpy(target_control.X), axis=0).reshape(1, -1)
+    source_perturb_basal = to_numpy(source_perturb.X)
+
+    # basal-based prediction uses the same linear-transformation strategy as the
+    # reference prediction script, rather than the target-control + delta rule
+    # used for macrogene-based prediction.
+    lr = LinearRegression(fit_intercept=True)
+    lr.fit(source_control_mean, target_control_mean)
+    pred_target_basal = lr.predict(source_perturb_basal)
     pred_target_basal = torch.tensor(pred_target_basal, dtype=torch.float32)
 
     pred_adata = decode_to_species_space(pred_target_basal, model, dataset, args.target_species)
