@@ -3,7 +3,7 @@
 This repository contains the code for training and generating results using the Unify model.
 
 ## **Overview**
-![Architecture Diagram](images/model.png)
+![Architecture Diagram](images/model.jpg)
 
 **Unify** is a **transfer learning framework** designed to integrate single-cell RNA sequencing (**scRNA-seq**) data **across species** — even those separated by hundreds of millions of years.  
 Instead of relying solely on one-to-one orthologs, Unify creates **functionally coherent multi-modal macrogenes** that **transcend species boundaries** by integrating:  
