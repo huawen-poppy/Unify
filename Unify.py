@@ -184,7 +184,7 @@ def merge_species_and_attach_latent(outdir: Path, sorted_species_names: list[str
 # Main training (end-to-end)
 # -----------------------------
 def main():
-    parser = argparse.ArgumentParser(description='Train the supervised AAE with macrogene layer — end-to-end (no W&B).')
+    parser = argparse.ArgumentParser(description='Integrate cross-species scRNA-seq datasets with Unify.')
     parser.add_argument('--h5ad_files', nargs='+', required=True)
     parser.add_argument('--species_labels', nargs='+', required=True)
     parser.add_argument('--celltype_labels', nargs='+', required=True)
@@ -196,11 +196,9 @@ def main():
     parser.add_argument('--output_path', type=str, required=True)
     parser.add_argument('--highly_variable_genes', type=int, default=8000)
     parser.add_argument('--batch_labels', type=str, default=None)
-    parser.add_argument('--evaluate_emb', type=str, default="True")
     parser.add_argument('--celltype_annotation_ref', type=str, default=None,
                         help='If not None, use reference species dataset to annotate another one.')
 
-    # moved hyperparams from W&B -> CLI (defaults = your previous values)
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--grad_normalized_type', type=str, default='l2')
     parser.add_argument('--hidden_size_adversary_species', type=int, default=256)
@@ -231,7 +229,6 @@ def main():
     eval_every = max(1, int(args.eval_every))
 
     # Resolve flags
-    evaluate_emb = (args.evaluate_emb == "True")
     celltype_annotation_ref = args.celltype_annotation_ref
 
     # -----------------------------
@@ -357,10 +354,10 @@ def main():
     llama_centroid_weights = torch.stack(llama_centroid_weights) # [genes, llama_macros]
 
     # Save processed adatas
-    #for k, v in species_to_adata_esm.items():
-    #    v.write_h5ad(outdir / f'{k}_processed_esm.h5ad')
-    #for k, v in species_to_adata_llama.items():
-    #    v.write_h5ad(outdir / f'{k}_processed_llama.h5ad')
+    for k, v in species_to_adata_esm.items():
+        v.write_h5ad(outdir / f'{k}_processed_esm.h5ad')
+    for k, v in species_to_adata_llama.items():
+        v.write_h5ad(outdir / f'{k}_processed_llama.h5ad')
 
     # -----------------------------
     # STEP 6: build macrogene adata (uses per-species counts)
@@ -475,14 +472,6 @@ def main():
         encoder_loss_sum = 0.0
         adversary_species_loss_sum = 0.0
         adversary_celltype_loss_sum = 0.0
-        overall_celltype_precision_sum = 0.0
-        overall_species_precision_sum = 0.0
-        overall_celltype_recall_sum = 0.0
-        overall_species_recall_sum = 0.0
-        overall_celltype_f1_sum = 0.0
-        overall_species_f1_sum = 0.0
-        overall_celltype_acc_sum = 0.0
-        overall_species_acc_sum = 0.0
 
         encoder.train()
         decoder.train()
@@ -604,11 +593,7 @@ def main():
             fake_latent = encoder(gene)
             validity_fake_latent = discriminator_species(fake_latent)
             predicted_species_labels = np.argmax(validity_fake_latent.detach().cpu().numpy(), axis=1)
-            sp_prec, sp_rec, sp_f1, sp_acc = compute_metrics(species_idx.cpu().numpy(), predicted_species_labels)
-            overall_species_acc_sum += sp_acc
-            overall_species_f1_sum += sp_f1
-            overall_species_precision_sum += sp_prec
-            overall_species_recall_sum += sp_rec
+
             D_loss = discriminator_species_loss(validity_fake_latent, species_idx)
             D_loss.backward()
             adversary_species_loss_sum += D_loss.item()
@@ -623,11 +608,7 @@ def main():
                 fake_latent = fake_latent[target_mask, :]
             validity_fake_latent = discriminator_celltype(fake_latent)
             predicted_celltype_labels = np.argmax(validity_fake_latent.detach().cpu().numpy(), axis=1)
-            ct_prec, ct_rec, ct_f1, ct_acc = compute_metrics(celltype_idx.cpu().numpy(), predicted_celltype_labels)
-            overall_celltype_acc_sum += ct_acc
-            overall_celltype_f1_sum += ct_f1
-            overall_celltype_precision_sum += ct_prec
-            overall_celltype_recall_sum += ct_rec
+
             D_celltype_loss = discriminator_celltype_loss(validity_fake_latent, celltype_idx)
             D_celltype_loss.backward()
             adversary_celltype_loss_sum += D_celltype_loss.item()
