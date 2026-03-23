@@ -77,7 +77,7 @@ Column name in `adata.obs` that stores batch labels.
 
 ---
 
-### Important notes
+##### Important notes
 
 - The order of the following arguments must be consistent across species:
   - `--h5ad_files`
@@ -111,7 +111,7 @@ python Unify.py \
 
 ```
 
-### **Unify output**
+#### **Unify output**
 
 - **`macrogene_merged_with_unify.h5ad`** – AnnData file of the macrogene expressions and the integration results. 
   - First n columns in adata.X are ESM macrogenes, n = parameters set in **`--num_esm_macrogene`**, default is 2000  
