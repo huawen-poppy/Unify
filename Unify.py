@@ -419,7 +419,7 @@ def main():
     pin = torch.cuda.is_available()
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, pin_memory=pin)
     gene_num = list(dataset.num_genes.values())[0]
-    print("Gene num:", gene_num)
+    print("Total amount of macrogenes:", gene_num)
 
     # -----------------------------
     # STEP 8: models, losses, optimizers
@@ -467,7 +467,6 @@ def main():
     overall_celltype_ARI = 0.0  # last computed ARI
 
     for epoch in range(args.train_epochs):
-        print(epoch)
         Reconstruction_loss_sum = 0.0
         encoder_loss_sum = 0.0
         adversary_species_loss_sum = 0.0
@@ -626,7 +625,6 @@ def main():
         # Evaluate ARI on embeddings at cadence
         if (epoch + 1) % eval_every == 0:
             overall_celltype_ARI_new = evaluation_model_embed(encoder, dataset=dataset)
-            print(f'overall_celltype_ari_EMB (new): {overall_celltype_ARI_new:.6f}')
             encoder.eval(); decoder.eval(); discriminator_celltype.eval(); discriminator_species.eval()
 
             # Save snapshot this epoch
@@ -643,15 +641,14 @@ def main():
                                 metrics={"overall_celltype_ARI_on_embeddings": float(best_metric)})
                 with open(outdir / "best_meta.json", "w") as f:
                     json.dump({"epoch": int(best_epoch), "metric": "ARI_embed", "value": float(best_metric)}, f, indent=2)
-                print(f"✅ New best at epoch {best_epoch}: ARI={best_metric:.6f} → {best_path}")
 
             overall_celltype_ARI = overall_celltype_ARI_new
 
-        print(
-            f"Epoch {epoch:03d} | AE: {Autoencoder_generator_loss:.4f} | "
-            f"Dsp: {Adversary_species_loss:.4f} | Dct: {Adversary_celltype_loss:.4f} | "
-            f"Target: {Target_loss:.4f} | ARI(embed): {overall_celltype_ARI:.4f}"
-        )
+        #print(
+        #    f"Epoch {epoch:03d} | AE: {Autoencoder_generator_loss:.4f} | "
+        #    f"Dsp: {Adversary_species_loss:.4f} | Dct: {Adversary_celltype_loss:.4f} | "
+        #    f"Target: {Target_loss:.4f} | ARI(embed): {overall_celltype_ARI:.4f}"
+        #)
 
         # Keep a compact epoch checkpoint (debug-friendly)
         save_checkpoint(ckpt_dir / f"epoch_{epoch:04d}.pt", encoder, decoder, epoch=epoch, metrics={
@@ -678,6 +675,7 @@ def main():
     for sp in sorted_species_names:
         fp = outdir / f"{sp}_macrogene_adata.h5ad"
         fp.unlink()
-
+    import shutil
+    shutil.rmtree(ckpt_dir)
 if __name__ == "__main__":
     main()
