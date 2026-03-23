@@ -36,25 +36,29 @@ pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_
 
 ---
 
-**Step 3:** Run the Unify model:  
+**Step 3:** Run the Unify model for dataset integration:  
 
 ```bash
 python Unify.py \
   --output_path ./runs/exp1 \
-  --h5ad_files ../data/task3_cat.h5ad ../data/task3_tiger.h5ad \
+  --h5ad_files ./toy_data/task3_cat.h5ad ./toy_data/task3_tiger.h5ad \
   --species_labels cat tiger \
   --celltype_labels NewCelltype NewCelltype \
-  --gene_esm_embedding_path ../gene_embeddings/task3_cat.gene_symbol_to_embedding_ESM2.pt ../gene_embeddings/task3_tiger.gene_symbol_to_embedding_ESM2.pt \
-  --gene_llama_embedding_path ../gene_go_term/all_go_gene_embedding/task3_cat_llama2-7B_gene_embedding.pt ../gene_go_term/all_go_gene_embedding/task3_tiger_llama2-7B_gene_embedding.pt \
+  --gene_esm_embedding_path ./toy_data/task3_cat.gene_symbol_to_embedding_ESM2.pt ./toy_data/task3_tiger.gene_symbol_to_embedding_ESM2.pt \
+  --gene_llama_embedding_path ./toy_data/task3_cat_llama2-7B_gene_embedding.pt ./toy_data/task3_tiger_llama2-7B_gene_embedding.pt \
   --eval_every 5 \
-  --train_epochs 500
+  --train_epochs 10 \
+  --num_esm_macrogene 100 \
+  --num_llama_macrogene 100 \
+  --highly_variable_genes 2000 
+
 ```
 
 ### **Unify output**
 
 - **`macrogene_merged_with_unify.h5ad`** – AnnData file of the macrogene expressions.  
-  - First 2k = ESM macrogenes  
-  - Latter 2k = LLaMA macrogenes  
+  - First n columns in X = ESM macrogenes, n = parameters set in **`--num_esm_macrogene`**, default is 2000  
+  - Latter m columns in X = LLaMA macrogenes, m = parameters set in **`--num_llama_macrogene`**, default is 2000  
   - Integrated embedding is stored in `adata.obsm['X_unify']`.  
 
 - **`all-esm_to_macrogenes.pkl`** – weight of each gene from each species to the ESM macrogenes.  
