@@ -97,7 +97,7 @@ Column name in `adata.obs` that stores batch labels.
 
 ```bash
 python Unify.py \
-  --output_path ./runs/exp1 \
+  --output_path ./test_result \
   --h5ad_files ./toy_data/task3_cat.h5ad ./toy_data/task3_tiger.h5ad \
   --species_labels cat tiger \
   --celltype_labels NewCelltype NewCelltype \
