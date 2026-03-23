@@ -37,6 +37,65 @@ pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_
 ---
 
 **Step 3:** Run the Unify model for dataset integration:  
+Please run the `Unify.py` for cross-species data integration.
+
+## Command-line arguments
+Below is a description of the main arguments used in `Unify.py`.
+
+### Basic input arguments
+
+#### `--h5ad_files`
+One or more input AnnData (`.h5ad`) files. Each file should correspond to one species dataset.
+
+#### `--species_labels`
+Species names corresponding to the input `h5ad_files`, in the same order.
+
+#### `--celltype_labels`
+Column names in `adata.obs` that store the cell-type annotations for each dataset. The order must match the input `h5ad_files`.
+
+#### `--highly_variable_genes`
+Number of highly variable genes to retain during preprocessing. Default 8000.
+
+#### `--gene_esm_embedding_path`
+Paths to the protein embedding files for each species. These files are typically generated from a protein language model such as ESM.
+
+#### `--gene_llama_embedding_path`
+Paths to the gene functional text embedding files for each species. These files are generated from the language-model-based text embedding pipeline.
+
+#### `--output_path`
+Directory where output files, logs, processed objects, and model will be saved.
+
+#### `--num_esm_macrogene`
+Number of ESM-based macrogenes to learn. Default 2000.
+
+#### `--num_llama_macrogene`
+Number of LLaMA-based macrogenes to learn. Default 2000.
+
+##### Optional arguments
+#### `--batch_labels`
+Column name in `adata.obs` that stores batch labels.
+#### `--seed`
+Random seed for reproducibility.
+
+---
+
+### Important notes
+
+- The order of the following arguments must be consistent across species:
+  - `--h5ad_files`
+  - `--species_labels`
+  - `--celltype_labels`
+  - `--gene_esm_embedding_path`
+  - `--gene_llama_embedding_path`
+
+- Each species should have:
+  1. an AnnData file,
+  2. a protein embedding file, and
+  3. a gene functional text embedding file.
+
+- The columns specified in `--celltype_labels` must exist in the corresponding `adata.obs`.
+
+- Run the following command to see the argument list directly from the script:
 
 ```bash
 python Unify.py \
@@ -56,9 +115,9 @@ python Unify.py \
 
 ### **Unify output**
 
-- **`macrogene_merged_with_unify.h5ad`** – AnnData file of the macrogene expressions.  
-  - First n columns in X = ESM macrogenes, n = parameters set in **`--num_esm_macrogene`**, default is 2000  
-  - Latter m columns in X = LLaMA macrogenes, m = parameters set in **`--num_llama_macrogene`**, default is 2000  
+- **`macrogene_merged_with_unify.h5ad`** – AnnData file of the macrogene expressions and the integration results. 
+  - First n columns in adata.X are ESM macrogenes, n = parameters set in **`--num_esm_macrogene`**, default is 2000  
+  - Latter m columns in adata.X are LLaMA macrogenes, m = parameters set in **`--num_llama_macrogene`**, default is 2000  
   - Integrated embedding is stored in `adata.obsm['X_unify']`.  
 
 - **`all-esm_to_macrogenes.pkl`** – weight of each gene from each species to the ESM macrogenes.  
