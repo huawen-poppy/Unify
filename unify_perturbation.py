@@ -286,7 +286,7 @@ def save_preprocessed_outputs(output_path, prep_obj):
     for species in prep_obj["sorted_species_names"]:
         macro = dataset.macrogenes_combined_per_species[species].to(dtype=torch.float32)
         macro_adata = ad.AnnData(X=macro.cpu().numpy(), obs=prep_obj["species_to_adata_esm"][species].obs.copy())
-        macro_adata.write_h5ad(output_path / f"{species}_macrogene_adata.h5ad")
+        #macro_adata.write_h5ad(output_path / f"{species}_macrogene_adata.h5ad")
 
 
 # -----------------------------
@@ -382,9 +382,9 @@ def train_model(args, dataset, output_path):
     optimizer_D_species = torch.optim.Adam(discriminator_species.parameters(), lr=args.lr_discriminator_species)
     optimizer_D_celltype = torch.optim.Adam(discriminator_celltype.parameters(), lr=args.lr_discriminator_celltype)
 
-    alpha = args.alpha_recon
-    beta = args.beta_species
-    gamma = args.gamma_celltype
+    alpha = 1
+    beta = 0.01
+    gamma = 1.0
 
     history = []
     for epoch in range(args.train_epochs):
@@ -459,13 +459,7 @@ def train_model(args, dataset, output_path):
             "condition_discriminator_loss": celltype_disc_running / len(dataloader),
         }
         history.append(epoch_record)
-        print(
-            f"Epoch {epoch + 1}/{args.train_epochs} | "
-            f"Recon: {epoch_record['reconstruction_loss']:.4f} | "
-            f"Enc: {epoch_record['encoder_loss']:.4f} | "
-            f"D_species: {epoch_record['species_discriminator_loss']:.4f} | "
-            f"D_condition: {epoch_record['condition_discriminator_loss']:.4f}"
-        )
+
 
     pd.DataFrame(history).to_csv(Path(output_path) / "training_history.csv", index=False)
     final_model_path = save_final_inference_model(output_path, args, dataset, model.eval())
@@ -636,9 +630,6 @@ def main():
     parser.add_argument("--macrogene_encoder_dropout_ratio", type=float, default=0.2)
     parser.add_argument("--macrogene_encoder_hidden_size", type=int, default=256)
     parser.add_argument("--train_epochs", type=int, default=1000)
-    parser.add_argument("--alpha_recon", type=float, default=1.0)
-    parser.add_argument("--beta_species", type=float, default=0.01)
-    parser.add_argument("--gamma_celltype", type=float, default=1.0)
 
     args = parser.parse_args()
 
