@@ -196,9 +196,6 @@ def main():
     parser.add_argument('--output_path', type=str, required=True)
     parser.add_argument('--highly_variable_genes', type=int, default=8000)
     parser.add_argument('--batch_labels', type=str, default=None)
-    parser.add_argument('--celltype_annotation_ref', type=str, default=None,
-                        help='If not None, use reference species dataset to annotate another one.')
-
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--grad_normalized_type', type=str, default='l2')
     parser.add_argument('--hidden_size_adversary_species', type=int, default=256)
@@ -228,8 +225,6 @@ def main():
     monitor_mode = "max"   # maximize ARI
     eval_every = max(1, int(args.eval_every))
 
-    # Resolve flags
-    celltype_annotation_ref = args.celltype_annotation_ref
 
     # -----------------------------
     # STEP 1: load adata + gene embeddings
@@ -521,11 +516,7 @@ def main():
             optimizer_A.zero_grad()
             encoder.train(); discriminator_species.eval(); discriminator_celltype.eval()
             fake_latent = encoder(gene)
-            # for annotation with a reference/query split (reference=0, query=1)
-            if celltype_annotation_ref is not None:
-                target_mask = (species_idx == 1)
-                fake_latent = fake_latent[target_mask, :]
-                celltype_idx = celltype_idx[target_mask]
+
             validity_fake_latent_celltype = discriminator_celltype(fake_latent)
             celltype_loss = adversarial_celltype_loss(validity_fake_latent_celltype, celltype_idx)
             adv_celltype_loss_data = celltype_loss.item()
@@ -573,12 +564,8 @@ def main():
             encoder.train(); discriminator_species.eval(); discriminator_celltype.eval()
             fake_latent = encoder(gene)
             validity_fake_latent = discriminator_species(fake_latent)
-            if celltype_annotation_ref is not None:
-                target_mask = (species_idx == 1)
-                fake_latent_masked = fake_latent[target_mask, :]
-                validity_fake_latent_celltype = discriminator_celltype(fake_latent_masked)
-            else:
-                validity_fake_latent_celltype = discriminator_celltype(fake_latent)
+
+            validity_fake_latent_celltype = discriminator_celltype(fake_latent)
             adv_loss = adversarial_species_loss(validity_fake_latent, species_idx)
             celltype_loss = adversarial_celltype_loss(validity_fake_latent_celltype, celltype_idx)
             A_loss = beta * (-adv_loss) + gamma * celltype_loss
@@ -602,9 +589,7 @@ def main():
             encoder.eval(); discriminator_species.eval(); discriminator_celltype.train()
             optimizer_D_celltype.zero_grad()
             fake_latent = encoder(gene)
-            if celltype_annotation_ref is not None:
-                target_mask = (species_idx == 1)
-                fake_latent = fake_latent[target_mask, :]
+
             validity_fake_latent = discriminator_celltype(fake_latent)
             predicted_celltype_labels = np.argmax(validity_fake_latent.detach().cpu().numpy(), axis=1)
 
