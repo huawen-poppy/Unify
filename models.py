@@ -1,7 +1,6 @@
 import torch 
 import torch.nn as nn
 import numpy as np
-import wandb
 from torch.utils.data import Dataset, DataLoader
 import scanpy as sc
 from dataset import SingleCellDataset

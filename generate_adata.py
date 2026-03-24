@@ -1,7 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 import scanpy as sc
 from models import Decoder, Discriminator, Discriminator_celltype, Encoder
-import wandb
 from macrogene_initialize import macrogene_initialization,load_gene_embeddings_adata
 import anndata as ad
 import pandas as pd
