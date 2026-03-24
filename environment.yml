@@ -1,4 +1,4 @@
-name: unify
+name: scanpy
 channels:
   - conda-forge
   - bioconda
@@ -308,4 +308,3 @@ dependencies:
   - libgpg-error==1.46=h620e276_0
   - typing-extensions==4.4.0=hd8ed1ab_0
   - cached-property==1.5.2=hd8ed1ab_1
-prefix: /home/zhonh0b/miniconda3/envs/scanpy
