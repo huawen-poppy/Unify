@@ -1,4 +1,4 @@
-name: scanpy
+name: unify
 channels:
   - conda-forge
   - bioconda
