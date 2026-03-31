@@ -40,6 +40,7 @@ Install the Python dependencies from `requirements.txt`.
 pip install -r requirements.txt
 pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 ```
+This install should talke under 10 minutes.
 
 ## Preparing the input files
 
@@ -140,11 +141,11 @@ python Unify.py \
   --celltype_labels NewCelltype NewCelltype \
   --gene_esm_embedding_path ./toy_data/task3_cat.gene_symbol_to_embedding_ESM2.pt ./toy_data/task3_tiger.gene_symbol_to_embedding_ESM2.pt \
   --gene_llama_embedding_path ./toy_data/task3_cat_llama2-7B_gene_embedding.pt ./toy_data/task3_tiger_llama2-7B_gene_embedding.pt \
-  --train_epochs 10 \
   --num_esm_macrogene 100 \
   --num_llama_macrogene 100 \
   --highly_variable_genes 2000
 ```
+This example test should talke under 30 minutes.
 
 ### Integration outputs
 
@@ -261,6 +262,7 @@ python Unify.py \
   --control_label PBS \
   --perturb_label IFN-beta
 ```
+This example test should talke under 30 minutes.
 
 ### Perturbation outputs
 
